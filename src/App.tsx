@@ -1,10 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import HomePage from './pages/HomePage';
-import MorningInterview from './pages/MorningInterview';
-import DailyView from './pages/DailyView';
-import CheckIn from './pages/CheckIn';
-import Retrospection from './pages/Retrospection';
+import ChatFlow from './pages/ChatFlow';
 
 export default function App() {
   return (
@@ -12,10 +9,7 @@ export default function App() {
       <div className="min-h-screen bg-background text-foreground">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/morning" element={<MorningInterview />} />
-          <Route path="/daily" element={<DailyView />} />
-          <Route path="/checkin" element={<CheckIn />} />
-          <Route path="/retro" element={<Retrospection />} />
+          <Route path="/chat" element={<ChatFlow />} />
         </Routes>
       </div>
       <Toaster />

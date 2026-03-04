@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { Sun, Calendar, CheckSquare, BarChart3 } from 'lucide-react';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -15,70 +14,15 @@ export default function HomePage() {
 
       <div className="space-y-4">
         <button
-          onClick={() => navigate('/morning')}
-          className="w-full p-6 bg-card border border-border rounded-lg hover:bg-accent transition-colors text-left group"
+          onClick={() => navigate('/chat')}
+          className="w-full p-8 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
         >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-              <Sun className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold mb-2">아침 인터뷰</h2>
-              <p className="text-sm text-muted-foreground">
-                오늘의 일정 확인, 에너지 레벨 체크, 우선순위 설정
-              </p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => navigate('/daily')}
-          className="w-full p-6 bg-card border border-border rounded-lg hover:bg-accent transition-colors text-left group"
-        >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-              <Calendar className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold mb-2">오늘 일정 보기</h2>
-              <p className="text-sm text-muted-foreground">
-                타임라인 뷰로 오늘의 작업 확인
-              </p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => navigate('/checkin')}
-          className="w-full p-6 bg-card border border-border rounded-lg hover:bg-accent transition-colors text-left group"
-        >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-              <CheckSquare className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold mb-2">중간 체크인</h2>
-              <p className="text-sm text-muted-foreground">
-                진행 상황 빠르게 업데이트
-              </p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => navigate('/retro')}
-          className="w-full p-6 bg-card border border-border rounded-lg hover:bg-accent transition-colors text-left group"
-        >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-              <BarChart3 className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold mb-2">하루 마무리</h2>
-              <p className="text-sm text-muted-foreground">
-                오늘의 성과 돌아보기
-              </p>
-            </div>
+          <div className="text-center">
+            <div className="text-4xl mb-3">💬</div>
+            <h2 className="text-2xl font-bold mb-2">하루 시작하기</h2>
+            <p className="text-sm opacity-90">
+              아침 인터뷰부터 하루 마무리까지 연속된 대화로 진행됩니다
+            </p>
           </div>
         </button>
       </div>
