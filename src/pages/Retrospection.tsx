@@ -1,207 +1,230 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Clock, Target } from 'lucide-react';
-import { toast } from 'sonner';
+import { ArrowLeft, Send } from 'lucide-react';
+
+interface Message {
+  id: string;
+  type: 'ai' | 'user';
+  content: string;
+  options?: string[];
+  onOptionClick?: (option: string) => void;
+}
 
 export default function Retrospection() {
   const navigate = useNavigate();
-  const [reflection, setReflection] = useState('');
-  const [step, setStep] = useState<'summary' | 'reflection' | 'complete'>('summary');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [showInput, setShowInput] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Mock data
-  const summary = {
-    completed: 2,
-    total: 3,
-    estimatedTime: 105, // minutes
-    actualTime: 135,
-    streak: 3,
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const tasks = [
-    { title: '상완님 프롬프트 실제 사용 → 결과물 캡처/기록', completed: true, estimated: 60, actual: 75 },
-    { title: '내 프롬프트와 차이점 3가지 이내로 정리', completed: true, estimated: 30, actual: 45 },
-    { title: 'v2 방향 한 줄 가설 작성', completed: false, estimated: 15, actual: 0 },
-  ];
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-  const handleComplete = () => {
-    if (step === 'summary') {
-      setStep('reflection');
-    } else if (step === 'reflection') {
-      if (!reflection.trim()) {
-        toast.error('한 줄 회고를 입력해주세요');
-        return;
-      }
-      setStep('complete');
-    } else {
-      toast.success('오늘도 수고하셨어요!');
-      navigate('/');
+  useEffect(() => {
+    if (showInput && inputRef.current) {
+      inputRef.current.focus();
     }
+  }, [showInput]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      addAIMessage('하루 마무리 시간이에요! 🌙');
+      setTimeout(() => {
+        showSummary();
+      }, 1000);
+    }, 500);
+  }, []);
+
+  const addAIMessage = (content: string, options?: string[], onOptionClick?: (option: string) => void) => {
+    const msg: Message = {
+      id: Date.now().toString() + Math.random(),
+      type: 'ai',
+      content,
+      options,
+      onOptionClick,
+    };
+    setMessages((prev) => [...prev, msg]);
+  };
+
+  const addUserMessage = (content: string) => {
+    const msg: Message = {
+      id: Date.now().toString() + Math.random(),
+      type: 'user',
+      content,
+    };
+    setMessages((prev) => [...prev, msg]);
+  };
+
+  const showSummary = () => {
+    addAIMessage('오늘은 이렇게 보내셨어요:\n\n✅ 완료: 2개\n⏭ 미완료: 1개\n⏱ 작업 시간: 2시간 15분\n🔥 연속 기록: 3일');
+    
+    setTimeout(() => {
+      addAIMessage('오늘 예상보다 30분 더 걸렸어요. 다음엔 이걸 반영할게요.');
+      
+      setTimeout(() => {
+        showTasksDetail();
+      }, 1500);
+    }, 1500);
+  };
+
+  const showTasksDetail = () => {
+    addAIMessage('작업 상세:\n\n✅ 상완님 프롬프트 실제 사용\n   예상 60분 → 실제 75분\n\n✅ 프롬프트 차이점 정리\n   예상 30분 → 실제 45분\n\n⏭ v2 방향 가설 작성\n   예상 15분 (스킵됨)');
+    
+    setTimeout(() => {
+      askWhatBlocked();
+    }, 2000);
+  };
+
+  const askWhatBlocked = () => {
+    addAIMessage('계획대로 안 된 부분이 있네요. 뭐가 방해했을까요?');
+    setShowInput(true);
+  };
+
+  const handleBlockedSubmit = (answer: string) => {
+    addUserMessage(answer);
+    setShowInput(false);
+    
+    setTimeout(() => {
+      addAIMessage('그렇군요. 다음번엔 이걸 고려해서 계획을 세워볼게요.');
+      
+      setTimeout(() => {
+        askReflection();
+      }, 1500);
+    }, 500);
+  };
+
+  const askReflection = () => {
+    addAIMessage('오늘 하루는 어땠나요? 한 줄로 정리해볼까요.');
+    setShowInput(true);
+  };
+
+  const handleReflectionSubmit = (reflection: string) => {
+    addUserMessage(reflection);
+    setShowInput(false);
+    
+    setTimeout(() => {
+      complete(reflection);
+    }, 1000);
+  };
+
+  const complete = (reflection: string) => {
+    addAIMessage('오늘도 수고하셨어요! 🎉\n\n3일 연속 달성 중이에요.');
+    
+    setTimeout(() => {
+      addAIMessage(`오늘의 회고:\n"${reflection}"`);
+      
+      setTimeout(() => {
+        addAIMessage('내일도 함께 해요!');
+        
+        setTimeout(() => {
+          addAIMessage(
+            '다음에 뭘 하시겠어요?',
+            ['홈으로'],
+            (option) => {
+              addUserMessage(option);
+              setTimeout(() => {
+                navigate('/');
+              }, 500);
+            }
+          );
+        }, 1500);
+      }, 1500);
+    }, 1500);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+
+    if (messages.filter(m => m.type === 'user').length === 0) {
+      handleBlockedSubmit(inputValue);
+    } else {
+      handleReflectionSubmit(inputValue);
+    }
+    
+    setInputValue('');
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      <div className="mb-8">
+    <div className="flex flex-col h-screen bg-background">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
+          className="text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="w-4 h-4" />
-          홈으로
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-3xl font-bold">하루 마무리</h1>
-        <p className="text-muted-foreground mt-2">
-          오늘의 성과를 돌아봐요
-        </p>
+        <h1 className="text-xl font-bold">하루 마무리</h1>
       </div>
 
-      {step === 'summary' && (
-        <div className="space-y-6">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-card border border-border rounded-lg text-center">
-              <div className="text-2xl font-bold text-primary">
-                {summary.completed}/{summary.total}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">완료</div>
-            </div>
-            
-            <div className="p-4 bg-card border border-border rounded-lg text-center">
-              <div className="text-2xl font-bold">
-                {Math.floor(summary.actualTime / 60)}h {summary.actualTime % 60}m
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">작업 시간</div>
-            </div>
-            
-            <div className="p-4 bg-card border border-border rounded-lg text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {summary.streak} 🔥
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">연속 기록</div>
-            </div>
-          </div>
-
-          {/* Time comparison */}
-          <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-blue-900">
-                  오늘 예상보다 30분 더 걸렸어요
-                </p>
-                <p className="text-sm text-blue-700 mt-1">
-                  다음엔 이걸 반영할게요
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Tasks detail */}
-          <div className="p-6 bg-card border border-border rounded-lg">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              작업 상세
-            </h3>
-            <div className="space-y-3">
-              {tasks.map((task, i) => (
-                <div key={i} className={`p-3 rounded-lg ${
-                  task.completed ? 'bg-green-50 border border-green-200' : 'bg-muted'
-                }`}>
-                  <div className="flex items-start gap-3">
-                    <div className="text-xl">
-                      {task.completed ? '✅' : '⏭'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`font-medium mb-1 ${
-                        task.completed ? 'text-green-900' : 'text-muted-foreground line-through'
-                      }`}>
-                        {task.title}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        예상 {task.estimated}분
-                        {task.completed && ` → 실제 ${task.actual}분 (+${task.actual - task.estimated}분)`}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Incomplete exploration */}
-          {summary.completed < summary.total && (
-            <div className="p-6 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="font-medium text-amber-900 mb-2">
-                계획대로 안 된 부분이 있네요
-              </p>
-              <p className="text-sm text-amber-700">
-                뭐가 방해했을까요? 다음 회고 단계에서 이야기해볼게요
-              </p>
-            </div>
-          )}
-
-          <button
-            onClick={handleComplete}
-            className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            다음
-          </button>
-        </div>
-      )}
-
-      {step === 'reflection' && (
-        <div className="space-y-6">
-          <div className="p-6 bg-card border border-border rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">오늘 하루는 어땠나요?</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              한 줄로 정리해볼까요
-            </p>
-            
-            <textarea
-              value={reflection}
-              onChange={(e) => setReflection(e.target.value)}
-              placeholder="예: 프롬프트 비교 작업이 생각보다 재미있었다. 다음엔 v2 가설 먼저 세우고 시작해야겠다."
-              className="w-full h-32 px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-            />
-          </div>
-
-          <button
-            onClick={handleComplete}
-            disabled={!reflection.trim()}
-            className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            완료
-          </button>
-        </div>
-      )}
-
-      {step === 'complete' && (
-        <div className="space-y-6">
-          <div className="p-8 bg-card border border-border rounded-lg text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold mb-2">오늘도 수고하셨어요!</h2>
-            <p className="text-muted-foreground mb-4">
-              {summary.streak}일 연속 달성 중이에요
-            </p>
-
-            <div className="p-4 bg-muted rounded-lg mb-6">
-              <p className="text-sm font-medium mb-1">오늘의 회고</p>
-              <p className="text-muted-foreground italic">"{reflection}"</p>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 text-primary mb-6">
-              <TrendingUp className="w-5 h-5" />
-              <span className="font-medium">내일도 함께 해요!</span>
-            </div>
-
-            <button
-              onClick={() => navigate('/')}
-              className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                msg.type === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-foreground'
+              }`}
             >
-              홈으로
-            </button>
+              <p className="whitespace-pre-line">{msg.content}</p>
+              
+              {msg.options && msg.options.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {msg.options.map((option, i) => (
+                    <button
+                      key={i}
+                      onClick={() => msg.onOptionClick?.(option)}
+                      className="w-full px-4 py-2 bg-background rounded-lg hover:bg-accent transition-colors text-center"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="px-6 py-4 border-t border-border bg-card">
+        {showInput ? (
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="메시지를 입력하세요..."
+              className="flex-1 px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="submit"
+              disabled={!inputValue.trim()}
+              className="px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </form>
+        ) : (
+          <div className="text-center text-sm text-muted-foreground">
+            응답을 기다리는 중...
+          </div>
+        )}
+      </div>
     </div>
   );
 }

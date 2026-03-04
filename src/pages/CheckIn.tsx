@@ -1,114 +1,160 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check } from 'lucide-react';
-import { toast } from 'sonner';
+import { ArrowLeft } from 'lucide-react';
 
-type Progress = 'complete' | '70' | 'stuck' | 'skip';
-
-interface TaskProgress {
-  task: string;
-  progress: Progress | null;
+interface Message {
+  id: string;
+  type: 'ai' | 'user';
+  content: string;
+  options?: string[];
+  onOptionClick?: (option: string) => void;
 }
+
+const tasks = [
+  '상완님 프롬프트 실제 사용 → 결과물 캡처/기록',
+  '내 프롬프트와 차이점 3가지 이내로 정리',
+  'v2 방향 한 줄 가설 작성',
+];
 
 export default function CheckIn() {
   const navigate = useNavigate();
-  const [tasks] = useState<TaskProgress[]>([
-    { task: '상완님 프롬프트 실제 사용 → 결과물 캡처/기록', progress: null },
-    { task: '내 프롬프트와 차이점 3가지 이내로 정리', progress: null },
-    { task: 'v2 방향 한 줄 가설 작성', progress: null },
-  ]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [progress, setProgress] = useState<Record<number, Progress>>({});
+  const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const progressOptions: { value: Progress; label: string; emoji: string }[] = [
-    { value: 'complete', label: '완료', emoji: '✅' },
-    { value: '70', label: '70%', emoji: '🔄' },
-    { value: 'stuck', label: '막힘', emoji: '🤔' },
-    { value: 'skip', label: '스킵', emoji: '⏭' },
-  ];
-
-  const handleProgress = (value: Progress) => {
-    setProgress({ ...progress, [currentIndex]: value });
-    
-    if (currentIndex < tasks.length - 1) {
-      setTimeout(() => setCurrentIndex(currentIndex + 1), 300);
-    } else {
-      setTimeout(() => {
-        toast.success('체크인 완료!');
-        navigate('/daily');
-      }, 500);
-    }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const currentTask = tasks[currentIndex];
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      addAIMessage('중간 체크인할 시간이에요! 👋');
+      setTimeout(() => {
+        askProgress(0);
+      }, 1000);
+    }, 500);
+  }, []);
+
+  const addAIMessage = (content: string, options?: string[], onOptionClick?: (option: string) => void) => {
+    const msg: Message = {
+      id: Date.now().toString() + Math.random(),
+      type: 'ai',
+      content,
+      options,
+      onOptionClick,
+    };
+    setMessages((prev) => [...prev, msg]);
+  };
+
+  const addUserMessage = (content: string) => {
+    const msg: Message = {
+      id: Date.now().toString() + Math.random(),
+      type: 'user',
+      content,
+    };
+    setMessages((prev) => [...prev, msg]);
+  };
+
+  const askProgress = (index: number) => {
+    if (index >= tasks.length) {
+      complete();
+      return;
+    }
+
+    addAIMessage(
+      `하기로 한 "${tasks[index]}", 어떻게 되고 있어요?`,
+      ['✅ 완료', '🔄 70%', '🤔 막힘', '⏭ 스킵'],
+      (option) => handleProgress(index, option)
+    );
+  };
+
+  const handleProgress = (index: number, option: string) => {
+    addUserMessage(option);
+    
+    setTimeout(() => {
+      if (option === '🤔 막힘') {
+        addAIMessage('무엇이 막혀 있나요? 도움이 필요하면 말씀해주세요.');
+      } else {
+        addAIMessage('좋아요!');
+      }
+      
+      setTimeout(() => {
+        askProgress(index + 1);
+      }, 1000);
+    }, 500);
+  };
+
+  const complete = () => {
+    addAIMessage('체크인 완료! 잘하고 계시네요 👍');
+    
+    setTimeout(() => {
+      addAIMessage(
+        '다음에 뭘 하시겠어요?',
+        ['오늘 일정 보기', '홈으로'],
+        (option) => {
+          addUserMessage(option);
+          setTimeout(() => {
+            if (option === '오늘 일정 보기') {
+              navigate('/daily');
+            } else {
+              navigate('/');
+            }
+          }, 500);
+        }
+      );
+    }, 1500);
+  };
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      <div className="mb-8">
+    <div className="flex flex-col h-screen bg-background">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
         <button
           onClick={() => navigate('/daily')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
+          className="text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="w-4 h-4" />
-          일정으로
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-3xl font-bold">중간 체크인</h1>
-        <p className="text-muted-foreground mt-2">
-          진행 상황을 빠르게 업데이트해주세요
-        </p>
+        <h1 className="text-xl font-bold">중간 체크인</h1>
       </div>
 
-      {/* Progress bar */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2 text-sm text-muted-foreground">
-          <span>{currentIndex + 1} / {tasks.length}</span>
-          <span>{Math.round((currentIndex / tasks.length) * 100)}%</span>
-        </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+        {messages.map((msg) => (
           <div
-            className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${(currentIndex / tasks.length) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Current task */}
-      <div className="mb-8 p-6 bg-card border border-border rounded-lg">
-        <div className="text-lg font-semibold mb-6">
-          하기로 한 <span className="text-primary">{currentTask.task}</span>, 어떻게 되고 있어요?
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {progressOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => handleProgress(option.value)}
-              className="p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all text-center group"
+            key={msg.id}
+            className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                msg.type === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-foreground'
+              }`}
             >
-              <div className="text-3xl mb-2">{option.emoji}</div>
-              <div className="font-medium group-hover:text-primary">{option.label}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Completed tasks */}
-      {currentIndex > 0 && (
-        <div className="p-4 bg-muted rounded-lg">
-          <div className="text-sm font-medium text-muted-foreground mb-3">완료한 체크인</div>
-          <div className="space-y-2">
-            {tasks.slice(0, currentIndex).map((task, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-600" />
-                <div className="text-sm flex-1 truncate">{task.task}</div>
-                <div className="text-xs text-muted-foreground">
-                  {progressOptions.find(o => o.value === progress[i])?.label}
+              <p className="whitespace-pre-line">{msg.content}</p>
+              
+              {msg.options && msg.options.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {msg.options.map((option, i) => (
+                    <button
+                      key={i}
+                      onClick={() => msg.onOptionClick?.(option)}
+                      className="px-4 py-2 bg-background rounded-lg hover:bg-accent transition-colors text-center"
+                    >
+                      {option}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
     </div>
   );
 }
