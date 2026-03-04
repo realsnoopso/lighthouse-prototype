@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface Message {
   id: string;
@@ -183,13 +185,14 @@ export default function Retrospection() {
               {msg.options && msg.options.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {msg.options.map((option, i) => (
-                    <button
+                    <Button
                       key={i}
                       onClick={() => msg.onOptionClick?.(option)}
-                      className="w-full px-4 py-2 bg-background rounded-lg hover:bg-accent transition-colors text-center"
+                      variant="outline"
+                      className="w-full"
                     >
                       {option}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -203,21 +206,20 @@ export default function Retrospection() {
       <div className="px-6 py-4 border-t border-border bg-card">
         {showInput ? (
           <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
+            <Input
               ref={inputRef}
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="메시지를 입력하세요..."
-              className="flex-1 px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            <button
+            <Button
               type="submit"
               disabled={!inputValue.trim()}
-              className="px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              size="icon"
             >
               <Send className="w-5 h-5" />
-            </button>
+            </Button>
           </form>
         ) : (
           <div className="text-center text-sm text-muted-foreground">

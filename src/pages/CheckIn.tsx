@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Message {
   id: string;
@@ -140,13 +141,13 @@ export default function CheckIn() {
               {msg.options && msg.options.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {msg.options.map((option, i) => (
-                    <button
+                    <Button
                       key={i}
                       onClick={() => msg.onOptionClick?.(option)}
-                      className="px-4 py-2 bg-background rounded-lg hover:bg-accent transition-colors text-center"
+                      variant="outline"
                     >
                       {option}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
